@@ -5,6 +5,8 @@ A Claude Code mod that shows your plan usage and context window in a row above t
 ```
 5h ■□□□□□□□□□ 4% resets 3:40pm    │    Week ■■□□□□□□□□ 18%    │    Context ■■□□□ 68k 34%
 ```
+![App Screenshot](screenshot.png)
+![App Screenshot 2](screenshot2.png)
 
 - **5h** – the 5-hour rate-limit window, with the time it resets.
 - **Week** – the weekly rate-limit window.
