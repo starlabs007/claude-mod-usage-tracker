@@ -1,0 +1,11 @@
+{
+  "name": "usage-tracker",
+  "version": "0.1.0",
+  "description": "Shows 5-hour and weekly plan usage and the context window above the prompt",
+  "author": {
+    "name": "Hiep Dam"
+  },
+  "repository": "https://github.com/starlabs007/claude-mod-usage-tracker",
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
