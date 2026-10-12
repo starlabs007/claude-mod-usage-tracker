@@ -40,8 +40,7 @@ const tokenCount = (n: number) =>
 const colorFor = (percent: number) => (percent >= 80 ? 'red' : percent >= 50 ? 'yellow' : 'green')
 
 const CONTEXT_BLUE = '#4a90d9'
-// Past this many tokens, the filled squares holding the tokens beyond it are
-// drawn yellow; the last filled square always is.
+// Past this many tokens, every filled square is drawn yellow.
 const CONTEXT_WARN_TOKENS = 200_000
 
 const refreshOffset = async ($: EngineInterface) => {
@@ -125,11 +124,7 @@ export const register: Register = on => {
       const percent = `${Math.round(fill.percent)}%`
       const value = fill.tokens !== undefined ? tokenCount(fill.tokens) : percent
       const detail = fill.tokens !== undefined ? percent : ''
-      const filled = filledSquares(fill.percent, CONTEXT_BAR.width)
-      const blueSquares =
-        fill.tokens !== undefined && fill.tokens > CONTEXT_WARN_TOKENS
-          ? Math.min(filled - 1, Math.round(CONTEXT_WARN_TOKENS / (fill.window / CONTEXT_BAR.width)))
-          : CONTEXT_BAR.width
+      const isOverWarn = fill.tokens !== undefined && fill.tokens > CONTEXT_WARN_TOKENS
       sections.push({
         key: 'context',
         label: 'Context',
@@ -137,7 +132,7 @@ export const register: Register = on => {
         value,
         detail,
         style: CONTEXT_BAR,
-        colorAt: (i, isFilled) => (isFilled && i >= blueSquares ? 'yellow' : CONTEXT_BLUE),
+        colorAt: (_i, isFilled) => (isFilled && isOverWarn ? 'yellow' : CONTEXT_BLUE),
       })
     }
 
