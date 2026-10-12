@@ -10,7 +10,7 @@ A Claude Code mod that shows your plan usage and context window in a row above t
 
 - **5h** – the 5-hour rate-limit window, with the time it resets.
 - **Week** – the weekly rate-limit window.
-- **Context** – tokens in this session's context window. The bar is blue, and filled squares past 200k tokens turn yellow.
+- **Context** – tokens in this session's context window. The bar is blue, and every filled square turns yellow once the context passes 200k tokens.
 
 The 5h and Week bars are green below 50%, yellow from 50% and red from 80%. Any usage above 0% fills at least one square.
 
