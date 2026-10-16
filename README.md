@@ -1,18 +1,26 @@
 # usage-tracker
 
-A Claude Code mod that shows your plan usage and context window in a row above the prompt:
+A Claude Code mod that shows your plan usage and context window as a row of small rings above the prompt:
 
 ```
-◔ 5h 4% resets 3:40pm      ◔ Week 18%      ◑ Context 68k 34%
+◔ 5h 4% resets 3:40pm      ◔ Week 18%      ◔ Context 68k 34%
 ```
-![App Screenshot](screenshot.png)
-![App Screenshot 2](screenshot2.png)
+![Mockup of the row in the Claude desktop app](screenshot.png)
+![Mockup with the context ring turned yellow past 200k tokens](screenshot2.png)
+
+*The images are mockups: the rings are drawn by the mod's own `ringSvg` code, set in a page styled like the desktop app's prompt.*
 
 - **5h** – the 5-hour rate-limit window, with the time it resets.
 - **Week** – the weekly rate-limit window.
-- **Context** – tokens in this session's context window. The circle is blue and turns yellow once the context passes 200k tokens.
+- **Context** – tokens in this session's context window, then the percentage of the window used. The ring is blue and turns yellow once the context passes 200k tokens.
 
-The 5h and Week circles are green below 50%, yellow from 50% and red from 80%. Any usage above 0% shows at least a sliver of the ring. The ring is an SVG in the Claude app and an inline image in terminals that support the kitty graphics protocol (kitty, Ghostty); other terminals show a pie glyph (◔ ◑ ◕) instead.
+Each ring fills clockwise from the top. The 5h and Week rings are green below 50%, yellow from 50% and red from 80%. Any usage above 0% shows at least a sliver of the ring.
+
+How the ring is drawn depends on where Claude Code runs:
+
+- **Claude desktop and mobile apps:** an SVG ring.
+- **Terminals with the kitty graphics protocol** (kitty, Ghostty): an inline image of the same ring.
+- **Other terminals:** a pie glyph in quarter steps (○ ◔ ◑ ◕ ●).
 
 The rate-limit figures come from Claude Code itself and refresh after each response, so they appear only on a Claude subscription and only once the session has had its first reply.
 
