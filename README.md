@@ -3,16 +3,16 @@
 A Claude Code mod that shows your plan usage and context window in a row above the prompt:
 
 ```
-5h ■□□□□□□□□□ 4% resets 3:40pm    │    Week ■■□□□□□□□□ 18%    │    Context ■■□□□ 68k 34%
+◔ 5h 4% resets 3:40pm      ◔ Week 18%      ◑ Context 68k 34%
 ```
 ![App Screenshot](screenshot.png)
 ![App Screenshot 2](screenshot2.png)
 
 - **5h** – the 5-hour rate-limit window, with the time it resets.
 - **Week** – the weekly rate-limit window.
-- **Context** – tokens in this session's context window. The bar is blue, and every filled square turns yellow once the context passes 200k tokens.
+- **Context** – tokens in this session's context window. The circle is blue and turns yellow once the context passes 200k tokens.
 
-The 5h and Week bars are green below 50%, yellow from 50% and red from 80%. Any usage above 0% fills at least one square.
+The 5h and Week circles are green below 50%, yellow from 50% and red from 80%. Any usage above 0% shows at least a sliver of the ring. The ring is an SVG in the Claude app and an inline image in terminals that support the kitty graphics protocol (kitty, Ghostty); other terminals show a pie glyph (◔ ◑ ◕) instead.
 
 The rate-limit figures come from Claude Code itself and refresh after each response, so they appear only on a Claude subscription and only once the session has had its first reply.
 
