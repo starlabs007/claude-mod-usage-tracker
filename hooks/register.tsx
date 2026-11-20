@@ -1,11 +1,16 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
+import type { CacheStamp } from '../types'
+
 const windows = atom({ plugin: 'usage-tracker', key: 'windows' } as const, [])
 const context = atom({ plugin: 'usage-tracker', key: 'context' } as const, null)
 // The host's UTC offset in minutes, from `date +%z`: the module's own Date
 // carries no reliable local time zone.
 const utcOffset = atom({ plugin: 'usage-tracker', key: 'utcOffset' } as const, 0)
+// When the main thread's last request that read or wrote the prompt cache was
+// sent, and how long the cache it left holds.
+const cache = atom({ plugin: 'usage-tracker', key: 'cache' } as const, null)
 
 const LABELS: Record<string, string> = { five_hour: '5h', seven_day: 'Week' }
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -89,6 +94,23 @@ const colorFor = (percent: number) => (percent >= 80 ? COLORS.red : percent >= 5
 // Past this many tokens, the context ring is drawn yellow.
 const CONTEXT_WARN_TOKENS = 200_000
 
+// The cache ring is full at one hour left. It turns yellow at 7 minutes and red
+// at 2; the countdown shows minutes, then seconds for the last minute.
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const CACHE_WARN_MS = 7 * MINUTE
+const CACHE_DANGER_MS = 2 * MINUTE
+
+const cacheView = (stamp: CacheStamp, nowMs: number) => {
+  const leftMs = Math.max(0, stamp.at + stamp.ttlMs - nowMs)
+  const value =
+    leftMs <= 0 ? 'cold' : leftMs <= MINUTE ? `${Math.ceil(leftMs / 1000)}s` : `${Math.ceil(leftMs / MINUTE)}m`
+  const color = leftMs <= CACHE_DANGER_MS ? COLORS.red : leftMs <= CACHE_WARN_MS ? COLORS.yellow : COLORS.blue
+  // Whole percent steps: finer than the ring can show.
+  const percent = leftMs > 0 ? Math.max(Math.round((leftMs / HOUR) * 100), 1) : 0
+  return { value, color, percent }
+}
+
 const refreshOffset = async ($: EngineInterface) => {
   const { exitCode, stdout } = await $.process.run(['date', '+%z'])
   const match = /^([+-])(\d\d)(\d\d)/.exec(stdout.trim())
@@ -115,12 +137,49 @@ const resetTime = (resetsAt: string | undefined, nowMs: number, offset: number) 
 }
 
 export const register: Register = on => {
+  // The timer's copy of `cache`, so a tick redraws only when the band would change.
+  let stamp: CacheStamp | null = null
+  let shown = ''
+
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     const usage = await $.session.usage()
     await update($, windows, () => usage.rateLimits)
     await update($, context, () => usage.context)
     await refreshOffset($)
+    stamp = await read($, cache)
+
+    $.clock.every(1000, async () => {
+      if (!stamp) return
+      const view = cacheView(stamp, await $.clock.now())
+      const key = `${view.value} ${view.color} ${view.percent}`
+      if (key !== shown) {
+        shown = key
+        $.ui.invalidate('ui.render')
+      }
+    })
+    return result
+  })
+
+  // Main-thread requests only: a subagent keeps a cache of its own.
+  on('turn.step', async function* ($, e, next) {
+    if (e.agentId) return yield* next(e)
+
+    // A cache lifetime counts from when the request was sent.
+    const at = await $.clock.now()
+    const result = yield* next(e)
+    const usage = result.usage
+    if (usage && (usage.cache_read_input_tokens > 0 || usage.cache_creation_input_tokens > 0)) {
+      // A write names its lifetime; a read keeps the one the last write was given.
+      const ttlMs = usage.ephemeral_1h_input_tokens
+        ? HOUR
+        : usage.ephemeral_5m_input_tokens
+          ? 5 * MINUTE
+          : (stamp?.ttlMs ?? HOUR)
+      const fresh: CacheStamp = { at, ttlMs }
+      stamp = fresh
+      await update($, cache, () => fresh)
+    }
     return result
   })
 
@@ -177,6 +236,11 @@ export const register: Register = on => {
         detail,
         color: isOverWarn ? COLORS.yellow : COLORS.blue,
       })
+    }
+    const lastCache = await read($, cache)
+    if (lastCache) {
+      const view = cacheView(lastCache, nowMs)
+      sections.push({ key: 'cache', label: 'Cache', detail: '', ...view })
     }
 
     if (e.props.hasSurvey || sections.length === 0) {

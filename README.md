@@ -1,9 +1,9 @@
 # usage-tracker
 
-A Claude Code mod that shows your plan usage and context window as a row of small rings above the prompt:
+A Claude Code mod that shows your plan usage, context window and prompt-cache countdown as a row of small rings above the prompt:
 
 ```
-◔ 5h 4% resets 3:40pm      ◔ Week 18%      ◔ Context 68k 34%
+◔ 5h 4% resets 3:40pm      ◔ Week 18%      ◔ Context 68k 34%      ◕ Cache 42m
 ```
 ![Mockup of the row in the Claude desktop app](screenshot.png)
 ![Mockup with the context ring turned yellow past 200k tokens](screenshot2.png)
@@ -13,6 +13,7 @@ A Claude Code mod that shows your plan usage and context window as a row of smal
 - **5h** – the 5-hour rate-limit window, with the time it resets.
 - **Week** – the weekly rate-limit window.
 - **Context** – tokens in this session's context window, then the percentage of the window used. The ring is blue and turns yellow once the context passes 200k tokens.
+- **Cache** – time left before the prompt cache goes cold, counted from the main thread's last request that read or wrote it. The ring is full at one hour left and drains as the time runs out. It is blue, turns yellow at 7 minutes left and red at 2. The countdown is in minutes, then seconds for the last minute, then `cold`. The section appears after the first request of the session.
 
 Each ring fills clockwise from the top. The 5h and Week rings are green below 50%, yellow from 50% and red from 80%. Any usage above 0% shows at least a sliver of the ring.
 
