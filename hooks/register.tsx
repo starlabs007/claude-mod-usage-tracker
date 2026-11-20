@@ -84,6 +84,94 @@ const ringPixels = (percent: number, color: string) => {
   return out.toBase64()
 }
 
+// Cold cache, in place of the empty ring: a six-armed snowflake.
+const snowflakeSvg = () => {
+  const arms = [0, 60, 120, 180, 240, 300]
+    .map(
+      deg =>
+        `<g transform="rotate(${deg} 13 13)">` +
+        '<line x1="13" y1="13" x2="13" y2="3"/><polyline points="10.2,5.6 13,7.6 15.8,5.6"/>' +
+        '<polyline points="11,9.2 13,10.6 15,9.2"/></g>',
+    )
+    .join('')
+  return (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26">' +
+    '<g fill="none" stroke="#8fdcff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+    arms +
+    '</g><circle cx="13" cy="13" r="1.6" fill="#e6f8ff"/></svg>'
+  )
+}
+
+// Cold cache, desktop and mobile: "COLD" as a frozen title. Angular capitals
+// with ice-shard points, deep blue at the foot rising to pale ice, frost on
+// every top edge, a cold glow and two glints that twinkle where SVG animates.
+// The letters are paths, so no font is involved and the baseline sits where
+// we put it: drawn at COLD_W x COLD_H and centred in the row like the text
+// beside it, the baseline lies COLD_BASELINE px below the middle, where a
+// 13px system face in an 18px line has it.
+const COLD_W = 36
+const COLD_H = 22
+const COLD_BASELINE = 4.6
+// Four drawing units to the pixel: the baseline at y 62, caps 41 tall, wedge
+// serifs that flare into points like ice shards.
+const COLD_LETTERS_SVG = [
+  // C: faceted bowl, pointed arms.
+  'M34 20 L32 33 L28 29.5 L20 29 L15 33 L14 42 L15 52 L20 56 L28 55.5 L33 51 L35 64 L28 62.5 L18 63 L9 58 L5 49 L5 36 L9 26 L18 21 L28 21 Z',
+  // O: faceted.
+  'M55 21 L65 24 L70 32 L71 42 L70 52 L65 60 L55 63 L45 60 L40 52 L39 42 L40 32 L45 24 Z M55 29 L60 31 L62 36 L62.5 42 L62 48 L60 53 L55 55 L50 53 L48 48 L47.5 42 L48 36 L50 31 Z',
+  // L: a wedge serif on the stem, the foot flaring up into a point.
+  'M74 19 L91 20 L87 25 L87 54 L96 54 L103 47 L103 63 L76 63 L79 58 L79 25 Z',
+  // D: a wedge serif, a faceted bowl.
+  'M106 20 L121 21 L131 25 L137 33 L139 42 L137 52 L131 59 L121 62 L106 63 L109 58 L109 25 Z M118 28 L123 29 L128 33 L130 42 L128 51 L123 55 L118 56 Z',
+].join(' ')
+const glint = (x: number, y: number, r: number, delay: string) =>
+  `<path d="M${x} ${y - r} L${x + r * 0.22} ${y - r * 0.22} L${x + r} ${y} L${x + r * 0.22} ${y + r * 0.22} ` +
+  `L${x} ${y + r} L${x - r * 0.22} ${y + r * 0.22} L${x - r} ${y} L${x - r * 0.22} ${y - r * 0.22} Z" fill="#fff">` +
+  `<animate attributeName="opacity" values=".15;1;.15" dur="2.6s" begin="${delay}" repeatCount="indefinite"/></path>`
+const coldSvg = () =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${COLD_W}" height="${COLD_H}" viewBox="0 0 ${COLD_W * 4} ${COLD_H * 4}">` +
+  '<defs>' +
+  '<linearGradient id="ice" x1="0" y1="20" x2="0" y2="64" gradientUnits="userSpaceOnUse">' +
+  '<stop offset="0" stop-color="#e8faff"/><stop offset=".3" stop-color="#8fd8f8"/>' +
+  '<stop offset=".65" stop-color="#2d8fe0"/><stop offset="1" stop-color="#0b3f8f"/>' +
+  '</linearGradient>' +
+  '<filter id="frost" x="-15%" y="-30%" width="130%" height="160%">' +
+  // A cold halo behind the letters.
+  '<feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="halo"/>' +
+  '<feFlood flood-color="#9fe2ff" flood-opacity=".55"/><feComposite in2="halo" operator="in" result="glow"/>' +
+  // Frost: the band along every top edge, the alpha minus itself pushed down.
+  '<feOffset in="SourceAlpha" dy="2.6" result="down"/>' +
+  '<feComposite in="SourceAlpha" in2="down" operator="out" result="rim"/>' +
+  '<feMorphology in="rim" operator="dilate" radius=".6" result="rim2"/>' +
+  '<feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="2" seed="4" result="noise"/>' +
+  '<feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.6 -.35" result="flecks"/>' +
+  '<feComposite in="flecks" in2="rim2" operator="in" result="snowy"/>' +
+  '<feFlood flood-color="#ffffff"/><feComposite in2="rim" operator="in" result="snow"/>' +
+  // Crackle inside the ice: faint pale veins.
+  '<feTurbulence type="turbulence" baseFrequency=".09 .16" numOctaves="2" seed="9" result="veins"/>' +
+  '<feColorMatrix in="veins" type="matrix" values="0 0 0 0 .85  0 0 0 0 .96  0 0 0 0 1  0 0 0 -.9 .45" result="lines"/>' +
+  '<feComposite in="lines" in2="SourceAlpha" operator="in" result="crackle"/>' +
+  '<feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/><feMergeNode in="crackle"/>' +
+  '<feMergeNode in="snow"/><feMergeNode in="snowy"/></feMerge>' +
+  '</filter>' +
+  '</defs>' +
+  `<path d="${COLD_LETTERS_SVG}" fill="url(#ice)" fill-rule="evenodd" stroke="#08306a" stroke-width="1.6" ` +
+  'stroke-linejoin="miter" paint-order="stroke" filter="url(#frost)"/>' +
+  glint(34, 20, 6, '0s') +
+  glint(124, 24, 5, '1.3s') +
+  '</svg>'
+
+// Cold cache, terminal: one row, so the ice is a dark block behind the
+// letters, each a shade colder than the last.
+const COLD_LETTERS: [string, string][] = [
+  ['c', '#e8f9ff'],
+  ['o', '#bdeeff'],
+  ['l', '#8fdcff'],
+  ['d', '#5cc8f2'],
+]
+const SNOW = '#8fdcff'
+const ICE_BLOCK = '#0f3b54'
+
 // 68000 -> "68k", 1000000 -> "1M".
 const tokenCount = (n: number) =>
   n >= 1_000_000 ? `${+(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`
@@ -205,6 +293,8 @@ export const register: Register = on => {
       value: string
       detail: string
       color: string
+      // The cache has gone cold: drawn in ice in place of the plain value.
+      isCold?: boolean
     }[] = []
 
     for (const w of await read($, windows)) {
@@ -240,7 +330,7 @@ export const register: Register = on => {
     const lastCache = await read($, cache)
     if (lastCache) {
       const view = cacheView(lastCache, nowMs)
-      sections.push({ key: 'cache', label: 'Cache', detail: '', ...view })
+      sections.push({ key: 'cache', label: 'Cache', detail: '', isCold: view.value === 'cold', ...view })
     }
 
     if (e.props.hasSurvey || sections.length === 0) {
@@ -252,8 +342,14 @@ export const register: Register = on => {
 
     // The ring, drawn as the surface can: pixels in a terminal that has
     // graphics (its dim glyph elsewhere), SVG in the apps.
-    const ring = (section: { percent: number; color: string }) =>
-      e.surface === 'terminal' ? (
+    const ring = (section: { percent: number; color: string; isCold?: boolean }) =>
+      section.isCold ? (
+        e.surface === 'terminal' ? (
+          <Text color={SNOW}>❄ </Text>
+        ) : (
+          <ui.Svg source={snowflakeSvg()} alt="❄" width={18} height={18} />
+        )
+      ) : e.surface === 'terminal' ? (
         <ui.Image
           source={{ rgba: ringPixels(section.percent, section.color), width: RING_PX, height: RING_PX }}
           columns={2}
@@ -276,7 +372,22 @@ export const register: Register = on => {
           <Box key={section.key} gap="xs" alignItems="center">
             {ring(section)}
             <Text bold>{section.label}</Text>
-            <Text>{section.value}</Text>
+            {section.isCold ? (
+              e.surface === 'terminal' ? (
+                <Text bold backgroundColor={ICE_BLOCK}>
+                  {' '}
+                  {COLD_LETTERS.map(([letter, color]) => (
+                    <Text key={letter} color={color}>
+                      {letter}
+                    </Text>
+                  ))}{' '}
+                </Text>
+              ) : (
+                <ui.Svg source={coldSvg()} alt="cold" width={COLD_W} height={COLD_H} />
+              )
+            ) : (
+              <Text>{section.value}</Text>
+            )}
             {section.detail ? <Text dimColor>{section.detail}</Text> : null}
           </Box>
         ))}

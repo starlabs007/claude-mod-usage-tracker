@@ -76,7 +76,21 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await at(61_000)).toBe('2m')
     expect(await at(60_000)).toBe('60s')
     expect(await at(1_500)).toBe('2s')
-    expect(await at(0)).toBe('cold')
+
+    // Cold: the apps draw a frozen wordmark in place of the text; the terminal
+    // keeps the word, a colour to each letter on a block of ice.
+    await clock.set(1_000_000 + 60 * MINUTE)
+    const cold = await $.ui.mount({ ...BAND, surface })
+    if (surface === 'desktop') {
+      expect(await cacheText(cold)).toBeUndefined()
+      const svgs = (await cold.findAll({ type: 'Svg' })) as { props?: { alt?: string } }[]
+      expect(svgs.some(svg => svg.props?.alt === 'cold')).toBe(true)
+      expect(svgs.some(svg => svg.props?.alt === '❄')).toBe(true)
+    } else {
+      expect((await cold.find({ type: 'Text', text: /^\s?cold\s?$/ }))?.text.trim()).toBe('cold')
+      expect((await cold.find({ type: 'Text', text: /^d$/ }))?.text).toBe('d')
+    }
+    await cold.unmount()
   })
 }
 
